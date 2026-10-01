@@ -1,0 +1,12 @@
+
+CREATE TABLE dbo.States(
+	StateCode CHAR(2) NOT NULL,
+	StateName VARCHAR(50) NOT NULL,
+
+	CONSTRAINT PK_States
+		PRIMARY KEY CLUSTERED (StateCode),
+
+	CONSTRAINT UQ_States_StateName
+		UNIQUE NONCLUSTERED (StateName)
+);
+GO
