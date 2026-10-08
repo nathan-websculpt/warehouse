@@ -20,8 +20,14 @@ GO
 :r .\schema\014_create_warehouse_contacts.sql
 
 -- seed data
+
+-- reference data
 :r .\seed\001_seed_units_of_measure.sql
 :r .\seed\002_seed_inventory_transfer_statuses.sql
 :r .\seed\003_seed_address_regions.sql
+
+-- scenario data
+:r .\seed\004_seed_inventory_transfer_scenarios.sql
+:r .\seed\005_seed_inventory_availability_scenarios.sql
 
 GO
