@@ -180,6 +180,39 @@ BEGIN TRY
 	FROM @InsertedWarehouses
 	WHERE WarehouseName = N'Fertilizers R Us Main Warehouse'
 
+	-- Insert Warehouse Addresses
+	INSERT INTO dbo.WarehouseAddresses (
+		TenantId,
+		WarehouseId,
+		AddressLine1,
+		AddressLine2,
+		City,
+		StateCode,
+		ZipCode
+	)
+	VALUES
+	(@GreenleafGardenTenantId, @GreenleafGardenWarehouseId, N'100 Greenleaf Way', N'Building A', N'Atlanta', 'GA', '30303'),
+	(@GreenleafGardenTenantId, @GreenleafNurseryWarehouseId, N'200 Nursery Lane', NULL, N'Marietta', 'GA', '30060'),
+	(@FertilizersTenantId, @FertilizersWarehouseId, N'300 Fertilizer Drive', NULL, N'Birmingham', 'AL', '35203');
+
+	-- Insert warehouse contacts
+	INSERT INTO dbo.WarehouseContacts (
+		TenantId,
+		WarehouseId,
+		ContactName,
+		ContactRole,
+		PrimaryPhoneNumber,
+		PrimaryPhoneExtension,
+		SecondaryPhoneNumber,
+		SecondaryPhoneExtension,
+		EmailAddress
+	)
+	VALUES
+	(@GreenleafGardenTenantId, @GreenleafGardenWarehouseId, N'Morgan Ellis', N'Warehouse manager', '404-555-0101', '101', '404-555-0102', NULL, N'morgan.ellis@greenleaf.example'),
+	(@GreenleafGardenTenantId, @GreenleafGardenWarehouseId, N'Alex Parker', N'Shipping coordinator', '404-555-0103', '102', NULL, NULL, N'alex.parker@greenleaf.example'),
+	(@GreenleafGardenTenantId, @GreenleafNurseryWarehouseId, N'Jordan Lee', N'Nursery manager', '770-555-0101', NULL, NULL, NULL, N'jordan.lee@greenleaf.example'),
+	(@FertilizersTenantId, @FertilizersWarehouseId, N'Casey Brooks', N'Warehouse manager', '205-555-0101', '201', NULL, NULL, N'casey.brooks@fertilizers.example');
+
 	-- insert locations
 	INSERT INTO dbo.WarehouseLocations(
 		WarehouseId,

@@ -127,6 +127,40 @@ BEGIN TRY
 	FROM @InsertedWarehouses
 	WHERE WarehouseName = N'Maple main warehouse'
 
+	-- Insert warehouse addresses
+	INSERT INTO dbo.WarehouseAddresses (
+		TenantId,
+		WarehouseId,
+		AddressLine1,
+		AddressLine2,
+		City,
+		StateCode,
+		ZipCode
+	)
+	VALUES
+	(@CedarTenantId, @CedarMainWarehouseId, N'400 Cedar Avenue', N'Suite 100', N'Chicago', 'IL', '60607'),
+	(@CedarTenantId, @CedarReserveWarehouseId, N'500 Reserve Road', NULL, N'Rockford', 'IL', '61101'),
+	(@MapleTenantId, @MapleMainWarehouseId, N'600 Maple Drive', NULL, N'Madison', 'WI', '53703');
+
+	-- Insert warehouse contacts
+	INSERT INTO dbo.WarehouseContacts (
+		TenantId,
+		WarehouseId,
+		ContactName,
+		ContactRole,
+		PrimaryPhoneNumber,
+		PrimaryPhoneExtension,
+		SecondaryPhoneNumber,
+		SecondaryPhoneExtension,
+		EmailAddress,
+		IsActive
+	)
+	VALUES
+	(@CedarTenantId, @CedarMainWarehouseId, N'Taylor Reed', N'Warehouse manager', '312-555-0101', '101', '312-555-0102', NULL, N'taylor.reed@cedar.example', 1),
+	(@CedarTenantId, @CedarMainWarehouseId, N'Sam Quinn', N'Former warehouse manager', '312-555-0103', NULL, NULL, NULL, N'sam.quinn@cedar.example', 0),
+	(@CedarTenantId, @CedarReserveWarehouseId, N'Avery Grant', N'Reserve warehouse supervisor', '815-555-0101', '201', NULL, NULL, N'avery.grant@cedar.example', 1),
+	(@MapleTenantId, @MapleMainWarehouseId, N'Riley Morgan', N'Warehouse manager', '608-555-0101', NULL, '608-555-0102', '301', N'riley.morgan@maple.example', 1);
+
 	-- insert locations
 	INSERT INTO dbo.WarehouseLocations(
 		WarehouseId,
