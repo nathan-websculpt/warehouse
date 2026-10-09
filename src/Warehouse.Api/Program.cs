@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Warehouse.Api.Data;
+using Warehouse.Api.Data.Queries;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +10,10 @@ var connectionString =
         "Connection string 'Warehouse' was not found.");
 
 builder.Services.AddDbContext<WarehouseDbContext>(options => options.UseSqlServer(connectionString));
+
+builder.Services.AddSingleton(new SqlConnectionFactory(connectionString));
+
+builder.Services.AddScoped<StockAvailabilityQuery>();
 
 builder.Services.AddControllers();
 
