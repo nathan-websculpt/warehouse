@@ -15,7 +15,6 @@ DECLARE @ProductId INT;
 DECLARE @InventoryLotId INT;
 DECLARE @InventoryTransferId INT;
 DECLARE @InventoryTransferLineId INT;
-DECLARE @InventoryMovementId INT;
 
 DECLARE @InsertedTenants TABLE (
     TenantId INT,
@@ -177,17 +176,24 @@ BEGIN TRY
 
     DELETE FROM @InsertedId;
 
+    
+    -- NOTE: CompleteInventoryTransfer sproc treats a RECEIVED transfer’s UpdatedAtUtc as its completion timestamp
+    --      seed that column, so replaying its completed transfer will pass the history check
+    DECLARE @CompletedAtUtc DATETIME2(7) = SYSUTCDATETIME();
+
     -- Insert completed transfer
     INSERT INTO dbo.InventoryTransfers (
         TenantId,
         TransferStatusCode,
         SourceLocationId,
-        DestinationLocationId
+        DestinationLocationId,
+        CreatedAtUtc,
+        UpdatedAtUtc
     )
     OUTPUT INSERTED.InventoryTransferId
     INTO @InsertedId (Id)
     VALUES
-    (@MedOneTenantId, 'RECEIVED', @MainLocationId, @ReserveLocationId);
+    (@MedOneTenantId, 'RECEIVED', @MainLocationId, @ReserveLocationId, @CompletedAtUtc, @CompletedAtUtc);
 
     SELECT @InventoryTransferId = Id
     FROM @InsertedId;
@@ -199,52 +205,50 @@ BEGIN TRY
         TenantId,
         InventoryTransferId,
         InventoryLotId,
-        QuantityRequested
+        QuantityRequested,
+        CreatedAtUtc
     )
     OUTPUT INSERTED.InventoryTransferLineId
     INTO @InsertedId (Id)
     VALUES
-    (@MedOneTenantId, @InventoryTransferId, @InventoryLotId, 30.0000);
+    (@MedOneTenantId, @InventoryTransferId, @InventoryLotId, 30.0000, @CompletedAtUtc);
 
     SELECT @InventoryTransferLineId = Id
     FROM @InsertedId;
 
     DELETE FROM @InsertedId;
 
-    -- record completed movement of 30 units
+    -- Record the completed movement of 30 units
     INSERT INTO dbo.InventoryMovements (
         TenantId,
         InventoryTransferLineId,
         InventoryLotId,
         Quantity,
         SourceLocationId,
-        DestinationLocationId
+        DestinationLocationId,
+        CreatedAtUtc
     )
-    OUTPUT INSERTED.InventoryMovementId
-    INTO @InsertedId (Id)
     VALUES
-    (@MedOneTenantId, @InventoryTransferLineId, @InventoryLotId, 30.0000, @MainLocationId, @ReserveLocationId);
+    (@MedOneTenantId, @InventoryTransferLineId, @InventoryLotId, 30.0000, @MainLocationId, @ReserveLocationId, @CompletedAtUtc);
 
-    SELECT @InventoryMovementId = Id
-    FROM @InsertedId;
-
-    DELETE FROM @InsertedId;
 
     -- Insert the resulting balances:
-    -- Opening stock: source 100, destination 0
-    -- Completed move: 30 from source to destination
-    -- Final stock: source 70, destination 30
-    -- Reserved stock: 0 at both locations
+    --      Opening stock: source 100, destination 0
+    --      Completed move: 30 from source to destination
+    --      Final stock: source 70, destination 30
+    --      Reserved stock: 0 at both locations
     INSERT INTO dbo.InventoryBalances (
         TenantId,
         WarehouseLocationId,
         InventoryLotId,
         QuantityOnHand,
-        QuantityReserved
+        QuantityReserved,
+        CreatedAtUtc,
+        UpdatedAtUtc
     )
     VALUES
-    (@MedOneTenantId, @MainLocationId, @InventoryLotId, 70.0000, 0.0000),
-    (@MedOneTenantId, @ReserveLocationId, @InventoryLotId, 30.0000, 0.0000);
+    (@MedOneTenantId, @MainLocationId, @InventoryLotId, 70.0000, 0.0000, @CompletedAtUtc, @CompletedAtUtc),
+    (@MedOneTenantId, @ReserveLocationId, @InventoryLotId, 30.0000, 0.0000, @CompletedAtUtc, NULL);
 
 	COMMIT TRANSACTION;
 

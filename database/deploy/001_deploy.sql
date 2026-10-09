@@ -1,6 +1,7 @@
 :On Error exit
 
-USE Warehouse;
+--USE Warehouse;
+USE WarehouseDev;
 GO
 
 -- create tables
@@ -19,15 +20,19 @@ GO
 :r .\schema\013_create_warehouse_addresses.sql
 :r .\schema\014_create_warehouse_contacts.sql
 
--- seed data
+-- create sprocs
+:r .\procedures\001_get_warehouse_stock_availability.sql
+:r .\procedures\002_complete_inventory_transfer.sql
 
--- reference data
+
+-- seed reference data
 :r .\seed\001_seed_units_of_measure.sql
 :r .\seed\002_seed_inventory_transfer_statuses.sql
 :r .\seed\003_seed_address_regions.sql
 
--- scenario data
+-- seed scenario data
 :r .\seed\004_seed_inventory_transfer_scenarios.sql
 :r .\seed\005_seed_inventory_availability_scenarios.sql
+:r .\seed\006_seed_inventory_movement_scenarios.sql
 
 GO

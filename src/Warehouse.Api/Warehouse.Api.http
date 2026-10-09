@@ -1,0 +1,29 @@
+@Warehouse.Api_HostAddress = http://localhost:5189
+
+GET {{Warehouse.Api_HostAddress}}/api/tenants
+Accept: application/json
+
+###
+
+GET {{Warehouse.Api_HostAddress}}/api/tenants/460500a6-c80d-4228-9525-f25527e12a38
+Accept: application/json
+
+###
+
+GET {{Warehouse.Api_HostAddress}}/api/tenants/deabfaaa-c9a1-4e05-8db4-98bfc9029605
+Accept: application/json
+
+###
+
+GET {{Warehouse.Api_HostAddress}}/api/tenants/460500a6-c80d-4228-9525-f25527e12a38/warehouses
+Accept: application/json
+
+###
+
+GET {{Warehouse.Api_HostAddress}}/api/tenants/deabfaaa-c9a1-4e05-8db4-98bfc9029605/warehouses
+Accept: application/json
+
+###
+
+GET {{Warehouse.Api_HostAddress}}/api/tenants/00000000-0000-0000-0000-000000000001
+Accept: application/json

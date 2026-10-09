@@ -20,7 +20,6 @@ DECLARE @MapleLocationId INT;
 DECLARE @DogFoodProductId INT;
 DECLARE @TreatProductId INT;
 DECLARE @LitterProductId INT;
-DECLARE @HarnessProductId INT;
 DECLARE @ShampooProductId INT;
 DECLARE @MapleDogFoodProductId INT;
 
@@ -251,11 +250,6 @@ BEGIN TRY
 	FROM @InsertedProducts
 	WHERE TenantId = @CedarTenantId
 		AND SKU = N'P2-CAT-LITTER'
-	
-	SELECT @HarnessProductId = ProductId
-	FROM @InsertedProducts
-	WHERE TenantId = @CedarTenantId
-		AND SKU = N'P2-DOG-HARNESS'
 	
 	SELECT @ShampooProductId = ProductId
 	FROM @InsertedProducts

@@ -443,7 +443,6 @@ test-results/
 # Icon must end with two \r
 Icon
 
-
 # Thumbnails
 ._*
 
@@ -490,3 +489,40 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Local credential files
+secrets.json
+credentials.json
+*service-account*.json
+*service_account*.json
+.git-credentials
+.netrc
+_netrc
+.pypirc
+
+# Local cloud and SSH configuration
+.aws/
+.azure/
+.ssh/
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+
+# Reserved storage for private local files
+/.secrets/
+
+# Local database exports and backups
+/database/exports/
+/database/backups/
+/database/dumps/
+
+# HTTP/network captures and test result logs
+*.har
+*.pcap
+*.pcapng
+*.trx
+
+# Merge and patch leftovers
+*.orig
+*.rej

@@ -1,1 +1,5 @@
-<Solution />
+<Solution>
+  <Project Path="src/Warehouse.Api/Warehouse.Api.csproj" Id="8c26fcd0-742f-4214-97ca-3275b5a0380c" />
+  <Project Path="src/Warehouse.Web.RazorPages/Warehouse.Web.RazorPages.csproj" Id="7aafef71-c61d-427e-8e09-f03bc6bddf90" />
+  <Project Path="tests/Warehouse.Api.IntegrationTests/Warehouse.Api.IntegrationTests.csproj" Id="98563b7e-1a89-4a09-a42a-ad0fbcbabe73" />
+</Solution>

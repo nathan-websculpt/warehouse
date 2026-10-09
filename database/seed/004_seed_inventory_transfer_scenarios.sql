@@ -16,10 +16,7 @@ DECLARE @GreenleafNurseryWarehouseId INT;
 DECLARE @MainStockId INT;
 DECLARE @OverflowStockId INT;
 DECLARE @NurseryReceivingId INT;
-DECLARE @NurseryReplenishmentId INT;
-DECLARE @ClosedStorageId INT;
 DECLARE @FertStockId INT;
-DECLARE @FertShippingId INT;
 
 DECLARE @TomatoSeedProductId INT;
 DECLARE @BasilSeedProductId INT;
@@ -59,7 +56,6 @@ DECLARE @Transfer9Id INT;
 DECLARE @Transfer10Id INT;
 DECLARE @Transfer11Id INT;
 DECLARE @Transfer12Id INT;
-DECLARE @Transfer13Id INT;
 DECLARE @Transfer14Id INT;
 DECLARE @Transfer15Id INT;
 DECLARE @Transfer1PublicId UNIQUEIDENTIFIER = NEWID();
@@ -255,27 +251,9 @@ BEGIN TRY
 		AND WarehouseId = @GreenleafNurseryWarehouseId
 		AND TenantId = @GreenleafGardenTenantId
 			
-	SELECT @NurseryReplenishmentId = WarehouseLocationId
-	FROM @InsertedWarehouseLocations
-	WHERE DisplayName = N'Nursery replenishment bench'
-		AND WarehouseId = @GreenleafNurseryWarehouseId
-		AND TenantId = @GreenleafGardenTenantId
-			
-	SELECT @ClosedStorageId = WarehouseLocationId
-	FROM @InsertedWarehouseLocations
-	WHERE DisplayName = N'Closed storage area'
-		AND WarehouseId = @GreenleafGardenWarehouseId
-		AND TenantId = @GreenleafGardenTenantId
-			
 	SELECT @FertStockId = WarehouseLocationId
 	FROM @InsertedWarehouseLocations
 	WHERE DisplayName = N'Fertilizers R Us stock'
-		AND WarehouseId = @FertilizersWarehouseId
-		AND TenantId = @FertilizersTenantId
-			
-	SELECT @FertShippingId = WarehouseLocationId
-	FROM @InsertedWarehouseLocations
-	WHERE DisplayName = N'Fertilizers R Us shipping'
 		AND WarehouseId = @FertilizersWarehouseId
 		AND TenantId = @FertilizersTenantId
 
@@ -559,10 +537,6 @@ BEGIN TRY
 	SELECT @Transfer12Id = InventoryTransferId
 	FROM @InsertedTransfers
 	WHERE InventoryTransferPublicId = @Transfer12PublicId;
-
-	SELECT @Transfer13Id = InventoryTransferId
-	FROM @InsertedTransfers
-	WHERE InventoryTransferPublicId = @Transfer13PublicId;
 
 	SELECT @Transfer14Id = InventoryTransferId
 	FROM @InsertedTransfers
