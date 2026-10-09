@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Warehouse.Api.Contracts.StockAvailability;
+using Warehouse.Contracts.StockAvailability;
 using Warehouse.Api.Data;
 using Warehouse.Api.Data.Queries;
 

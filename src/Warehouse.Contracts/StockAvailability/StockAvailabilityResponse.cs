@@ -1,4 +1,4 @@
-﻿namespace Warehouse.Api.Contracts.StockAvailability;
+﻿namespace Warehouse.Contracts.StockAvailability;
 
 public sealed record StockAvailabilityResponse(
     Guid ProductPublicId,
@@ -13,5 +13,4 @@ public sealed record StockAvailabilityResponse(
     decimal ExpiredOnHand,
     decimal InactiveLocationOnHand,
     int EligibleLotCount,
-    string StockStatus
-);
+    string StockStatus);

@@ -16,7 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Warehouse.Api\Warehouse.Api.csproj" />
+	<ProjectReference Include="..\..\src\Warehouse.Api\Warehouse.Api.csproj" />
+	<ProjectReference Include="..\..\src\Warehouse.Contracts\Warehouse.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

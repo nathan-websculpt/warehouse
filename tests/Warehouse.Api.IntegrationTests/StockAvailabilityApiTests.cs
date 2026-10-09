@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using System.Net;
 using System.Net.Http.Json;
-using Warehouse.Api.Contracts.StockAvailability;
+using Warehouse.Contracts.StockAvailability;
 using Warehouse.Api.Data;
 
 namespace Warehouse.Api.IntegrationTests;
@@ -33,8 +33,7 @@ public sealed class StockAvailabilityApiTests : IClassFixture<WebApplicationFact
             {
                 tenant.TenantId,
                 tenant.TenantPublicId
-            })
-            .SingleAsync();
+            }).SingleAsync();
 
         var cedarMainWarehousePublicId =
             await dbContext.Warehouses

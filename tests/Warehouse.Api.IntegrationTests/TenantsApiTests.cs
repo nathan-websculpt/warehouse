@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
-using Warehouse.Api.Contracts.Tenants;
-using Warehouse.Api.Contracts.Warehouses;
+using Warehouse.Contracts.Tenants;
+using Warehouse.Contracts.Warehouses;
 using Warehouse.Api.Data;
 
 namespace Warehouse.Api.IntegrationTests;

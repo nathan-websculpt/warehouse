@@ -1,4 +1,4 @@
-﻿namespace Warehouse.Api.Contracts.Warehouses;
+﻿namespace Warehouse.Contracts.Warehouses;
 
 public sealed record WarehouseResponse(
     Guid WarehousePublicId,
@@ -6,5 +6,4 @@ public sealed record WarehouseResponse(
     string WarehouseName,
     bool IsActive,
     DateTime CreatedAtUtc,
-    DateTime? UpdatedAtUtc
-);
+    DateTime? UpdatedAtUtc);

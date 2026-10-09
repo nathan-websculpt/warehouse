@@ -1,6 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using System.Data;
-using Warehouse.Api.Contracts.StockAvailability;
+using Warehouse.Contracts.StockAvailability;
 
 namespace Warehouse.Api.Data.Queries;
 

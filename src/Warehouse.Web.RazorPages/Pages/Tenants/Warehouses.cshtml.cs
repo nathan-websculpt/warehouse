@@ -2,7 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Warehouse.Web.RazorPages.Models;
+using Warehouse.Contracts.Tenants;
+using Warehouse.Contracts.Warehouses;
 
 namespace Warehouse.Web.RazorPages.Pages.Tenants;
 
