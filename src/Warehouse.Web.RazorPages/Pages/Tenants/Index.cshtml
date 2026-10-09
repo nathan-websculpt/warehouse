@@ -1,0 +1,50 @@
+﻿@page
+@model Warehouse.Web.RazorPages.Pages.Tenants.IndexModel
+
+@{
+    ViewData["Title"] = "Tenants";
+}
+
+<h1>Tenants</h1>
+
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">
+        @Model.ErrorMessage
+    </div>
+}
+else if (Model.Tenants.Count == 0)
+{
+    <p>No tenants were found.</p>
+}
+else
+{
+    <p>@Model.Tenants.Count tenant(s)</p>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Public ID</th>
+                <th scope="col">Active</th>
+                <th scope="col">Created (UTC)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var tenant in Model.Tenants)
+            {
+                <tr>
+                    <td>
+                        <a asp-page="/Tenants/Warehouses"
+                           asp-route-tenantPublicId="@tenant.TenantPublicId">
+                            @tenant.TenantName
+                        </a>
+                    </td>
+                    <td>@tenant.TenantPublicId</td>
+                    <td>@(tenant.IsActive ? "Yes" : "No")</td>
+                    <td>@tenant.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
