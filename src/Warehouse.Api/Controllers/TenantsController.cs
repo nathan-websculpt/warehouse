@@ -17,6 +17,7 @@ public sealed class TenantsController(WarehouseDbContext dbContext) : Controller
             .AsNoTracking()
             .OrderBy(tenant => tenant.TenantName)
             .Select(tenant => new TenantResponse(
+                tenant.TenantId,
                 tenant.TenantPublicId,
                 tenant.TenantName,
                 tenant.IsActive,
@@ -34,6 +35,7 @@ public sealed class TenantsController(WarehouseDbContext dbContext) : Controller
             .AsNoTracking()
             .Where(tenant => tenant.TenantPublicId == tenantPublicId)
             .Select(tenant => new TenantResponse(
+                tenant.TenantId,
                 tenant.TenantPublicId,
                 tenant.TenantName,
                 tenant.IsActive,

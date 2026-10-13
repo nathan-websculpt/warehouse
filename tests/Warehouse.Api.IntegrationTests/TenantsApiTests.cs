@@ -58,6 +58,7 @@ public sealed class TenantsApiTests : IClassFixture<WebApplicationFactory<Progra
             .AsNoTracking()
             .OrderBy(tenant => tenant.TenantId)
             .Select(tenant => new TenantResponse(
+                tenant.TenantId,
                 tenant.TenantPublicId,
                 tenant.TenantName,
                 tenant.IsActive,

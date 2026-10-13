@@ -36,11 +36,7 @@ public sealed class WarehousesModel(IHttpClientFactory httpClientFactory, ILogge
         }
         catch (HttpRequestException exception)
         {
-            logger.LogError(
-                exception,
-                "Failed to load warehouses for tenant {TenantPublicId}.",
-                tenantPublicId);
-
+            logger.LogError(exception, "Failed to load warehouses for tenant {TenantPublicId}.", tenantPublicId);
             ErrorMessage = "The warehouse list could not be loaded. Check that Warehouse.Api is running.";
         }
 

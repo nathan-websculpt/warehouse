@@ -23,10 +23,7 @@ public sealed class IndexModel(IHttpClientFactory httpClientFactory, ILogger<Ind
         }
         catch (HttpRequestException exception)
         {
-            logger.LogError(
-                exception,
-                "Failed to retrieve tenants from Warehouse.Api.");
-
+            logger.LogError(exception, "Failed to retrieve tenants from Warehouse.Api.");
             ErrorMessage = "The tenant list could not be loaded. Check that Warehouse.Api is running.";
         }
     }

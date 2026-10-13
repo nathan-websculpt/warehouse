@@ -14,6 +14,7 @@ builder.Services.AddDbContext<WarehouseDbContext>(options => options.UseSqlServe
 builder.Services.AddSingleton(new SqlConnectionFactory(connectionString));
 
 builder.Services.AddScoped<StockAvailabilityQuery>();
+builder.Services.AddScoped<CompleteInventoryTransferQuery>();
 
 builder.Services.AddControllers();
 

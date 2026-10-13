@@ -1,0 +1,102 @@
+﻿@page
+@model Warehouse.Web.RazorPages.Pages.Transfers.IndexModel
+
+@{
+    ViewData["Title"] = "Transfer Lines";
+}
+
+<h1>Transfer Lines</h1>
+
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">
+        @Model.ErrorMessage
+    </div>
+}
+
+@if (Model.CompletionResult is { } completion)
+{
+    <div class="alert alert-success" role="status">
+        Transfer @completion.Summary.InventoryTransferPublicId:
+        @completion.Summary.TransferStatusCode.
+        Replay: @completion.Summary.IsReplay.
+    </div>
+
+    <pre class="bg-light border rounded p-3">@System.Text.Json.JsonSerializer.Serialize(
+        completion,
+        new System.Text.Json.JsonSerializerOptions(
+            System.Text.Json.JsonSerializerDefaults.Web)
+        {
+            WriteIndented = true
+        })</pre>
+}
+
+@if (Model.InventoryTransferLines.Count == 0)
+{
+    <p>No transfer lines were found.</p>
+}
+else
+{
+    <p>@Model.InventoryTransferLines.Count transfer line(s)</p>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th scope="col">Tenant Name</th>
+                <th scope="col">Created (UTC)</th>
+                <th scope="col">Quantity Requested</th>
+                <th scope="col">Status</th>
+                <th scope="col">Source Location</th>
+                <th scope="col">Destination Location</th>
+                <th scope="col">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var transferLine in Model.InventoryTransferLines)
+            {
+                var transfer = transferLine.InventoryTransfer;
+
+                <tr>
+                    <td>@transfer.Tenant.TenantName</td>
+                    <td>
+                        @transferLine.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")
+                    </td>
+                    <td>@transferLine.QuantityRequested</td>
+                    <td>@transfer.TransferStatusCode</td>
+                    <td>@transfer.SourceLocationId</td>
+                    <td>@transfer.DestinationLocationId</td>
+                    <td>
+                        @if (transfer.TransferStatusCode is "APPROVED" or "RECEIVED")
+                        {
+                            var buttonText =
+                                transfer.TransferStatusCode == "RECEIVED" ? "Replay completion" : "Finalize transfer";
+
+                            <form method="post" asp-page-handler="Finalize">
+                                <input type="hidden"
+                                       name="tenantId"
+                                       value="@transfer.Tenant.TenantId" />
+
+                                <input type="hidden"
+                                       name="inventoryTransferPublicId"
+                                       value="@transfer.InventoryTransferPublicId" />
+
+                                <input type="hidden"
+                                       name="expectedRowVersion"
+                                       value="@Convert.ToBase64String(transfer.RowVersion)" />
+
+                                <button type="submit"
+                                        class="btn btn-sm btn-primary">
+                                    @buttonText
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Requires approval</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
