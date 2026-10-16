@@ -10,7 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Warehouse.Aspire.ServiceDefaults\Warehouse.Aspire.ServiceDefaults.csproj" />
     <ProjectReference Include="..\Warehouse.Web.Blazor.Client\Warehouse.Web.Blazor.Client.csproj" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.12" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.13" />
     <PackageReference Include="Microsoft.Extensions.ServiceDiscovery.Yarp" Version="10.10.0" />
   </ItemGroup>
 
