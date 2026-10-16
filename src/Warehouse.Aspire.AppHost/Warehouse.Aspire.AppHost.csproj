@@ -1,0 +1,17 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.6.1">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AspireUseCliBundle>true</AspireUseCliBundle>
+    <UserSecretsId>645efdbe-88a0-44e7-a6ce-f2efad570d88</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Warehouse.Api\Warehouse.Api.csproj" />
+    <ProjectReference Include="..\Warehouse.Web.Blazor\Warehouse.Web.Blazor.csproj" />
+  </ItemGroup>
+
+</Project>

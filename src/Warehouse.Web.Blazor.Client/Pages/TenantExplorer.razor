@@ -1,0 +1,153 @@
+﻿@using System.Text.Json
+@using Warehouse.Contracts.Tenants
+@using Warehouse.Contracts.Warehouses
+@using Warehouse.Contracts.StockAvailability
+@using Warehouse.Web.Blazor.Client.Services
+@inject WarehouseApiClient Api
+
+<hr />
+<h3>TenantExplorer.razor -- Related records</h3>
+
+<button disabled="@(_busy || Disabled)" @onclick="ReloadAsync">Reload related records</button>
+
+@if (_tenant is { } tenant)
+{
+    <p>
+        Tenant: @tenant.TenantName ::
+        Active: @tenant.IsActive
+    </p>
+}
+
+@if (_busy)
+{
+    <p role="status">Loading related records...</p>
+}
+
+@if (_error is not null)
+{
+    <p role="alert">@_error</p>
+}
+
+@foreach (var warehouse in _warehouses)
+{
+    <button disabled="@(_busy || Disabled)" @onclick="() => LoadStockAsync(warehouse)">
+        @warehouse.WarehouseCode -- @warehouse.WarehouseName
+    </button>
+}
+
+@if (_warehouseName is not null)
+{
+    <h4>Stock availability: @_warehouseName</h4>
+
+    @if (!_busy && _error is null && _stock.Count == 0)
+    {
+        <p>No stock records were returned.</p>
+    }
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>SKU</th>
+                <th>Product</th>
+                <th>Available to pick</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in _stock)
+            {
+                <tr>
+                    <td>@item.SKU</td>
+                    <td>@item.ProductName</td>
+                    <td>
+                        @item.AvailableToPick
+                        @item.UnitOfMeasureCode
+                    </td>
+                    <td>@item.StockStatus</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<hr />
+
+@code {
+    // Parameter Attribute means: this property is an input that another component can supply
+    [Parameter]
+    public Guid TenantPublicId { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    private TenantResponse? _tenant;
+    private List<WarehouseResponse> _warehouses = [];
+    private List<StockAvailabilityResponse> _stock = [];
+
+    private Guid? _loadedTenant;
+    private string? _warehouseName;
+    private string? _error;
+    private bool _busy;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loadedTenant == TenantPublicId) { return; }
+        _loadedTenant = TenantPublicId;
+        await ReloadAsync();
+    }
+
+    // when someone calls ReloadAsync, give RunAsync this asynchronous work to perform, and return its task
+    private Task ReloadAsync() => RunAsync(async () =>
+    {
+        _tenant = null;
+        _warehouses = [];
+        _stock = [];
+        _warehouseName = null;
+
+        _tenant = await Api.GetAsync<TenantResponse>($"api/tenants/{TenantPublicId}");
+
+        _warehouses = await Api.GetAsync<List<WarehouseResponse>>($"api/tenants/{TenantPublicId}/warehouses");
+    });
+
+    private Task LoadStockAsync(WarehouseResponse warehouse) => RunAsync(async () =>
+    {
+        _stock = [];
+        _warehouseName = warehouse.WarehouseName;
+
+        _stock =
+            await Api.GetAsync<List<StockAvailabilityResponse>>(
+                $"api/tenants/{TenantPublicId}/warehouses/" +
+                $"{warehouse.WarehousePublicId}/stock-availability");
+    });
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        if (_busy) { return; }
+
+        _busy = true;
+        _error = null;
+
+        try
+        {
+            await action();
+        }
+        catch (WarehouseApiException exception)
+        {
+            _error = exception.TraceId is null
+                ? exception.Message
+                : $"{exception.Message} Reference: {exception.TraceId}";
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException
+                or OperationCanceledException
+                or JsonException
+                or NotSupportedException)
+        {
+            _error = "Related records could not be loaded.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

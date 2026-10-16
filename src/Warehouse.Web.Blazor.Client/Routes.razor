@@ -1,0 +1,32 @@
+﻿@* 
+    blazor frontend's routing component - connects browser's current url to the page component that should appear 
+    
+    flow for /transfers is:
+        App.razor
+            -> Routes matches "/transfers"
+            -> RouteView renders Transfers inside MainLayout
+            -> FocusOnNavigate focuses the Transfers heading
+
+    Router finds the page matching the URL:
+        AppAssembly="typeof(Program).Assembly" tells it to search the compiled client project for routable components. 
+        An assembly is the compiled output of a .NET project. Each page declares its URL with @page.
+
+    Found describes what happens after a match:
+        Context="routeData" gives the match information a local name: routeData. 
+        It contains the selected component’s type and any route parameter values.
+
+    RouteView renders that page inside a layout:
+        The default is MainLayout.razor, which provides the sidebar, navigation menu, and content area. 
+        Its @Body marks where the selected page appears. A page can choose another layout using @layout.
+
+    FocusOnNavigate moves focus after navigation:
+        Selector="h1" targets the page’s main heading. 
+        This helps screen readers announce the newly displayed page.
+*@
+
+<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+    <Found Context="routeData">
+        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+</Router>

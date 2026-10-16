@@ -23,6 +23,16 @@ public sealed class FinalizeTransferController(
         {
             // TODO: need tenant authorization/access check
             var transferResponse = await completeInventoryTransferQuery.ExecuteAsync(tenantId, inventoryTransferPublicId, request.ExpectedRowVersion, cancellationToken);
+            
+            logger.LogInformation(
+                "Transfer {TransferId} for tenant {TenantId} completed: " +
+                "status={Status}, replay={IsReplay}, lines={LineCount}.",
+                inventoryTransferPublicId,
+                tenantId,
+                transferResponse.Summary.TransferStatusCode,
+                transferResponse.Summary.IsReplay,
+                transferResponse.Summary.LineCount);
+
             return Ok(transferResponse);
         }
         catch (SqlException exception) 

@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Warehouse.Aspire.ServiceDefaults\Warehouse.Aspire.ServiceDefaults.csproj" />
     <ProjectReference Include="..\Warehouse.Contracts\Warehouse.Contracts.csproj" />
   </ItemGroup>
 

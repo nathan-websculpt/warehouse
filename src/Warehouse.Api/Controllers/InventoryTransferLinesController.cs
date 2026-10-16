@@ -15,14 +15,50 @@ namespace Warehouse.Api.Controllers;
 public sealed class InventoryTransferLinesController(WarehouseDbContext dbContext) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<InventoryTransferLineResponse>>> GetInventoryTransferLines(CancellationToken cancellationToken)
+    public async Task<ActionResult<IReadOnlyList<InventoryTransferLineResponse>>> GetInventoryTransferLines(
+        CancellationToken cancellationToken,
+        [FromQuery] string? q = null,
+        [FromQuery] int? tenantId = null,
+        [FromQuery] Guid? inventoryTransferPublicId = null)
     {
-        var transferLines = await dbContext.InventoryTransferLines
-            .AsNoTracking()
+        q = q?.Trim();
+        if(q?.Length > 100)
+        {
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "Search text can not exceed 100 characters.");
+        }
+
+        var query = dbContext.InventoryTransferLines.AsNoTracking();
+
+        if(tenantId.HasValue)
+        {
+            query = query.Where(transferLine => transferLine.TenantId == tenantId.Value);
+        }
+
+        if(inventoryTransferPublicId.HasValue)
+        {
+            query = query.Where(transferLine => transferLine.InventoryTransfer.InventoryTransferPublicId == inventoryTransferPublicId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var isTransferId = Guid.TryParse(q, out var transferId);
+            var isNumber = int.TryParse(q, out var number);
+
+            query = query.Where(transferLine =>
+                transferLine.InventoryTransfer.Tenant.TenantName.Contains(q) ||
+                transferLine.InventoryTransfer.TransferStatusCode.Contains(q) ||
+                (isTransferId && transferLine.InventoryTransfer.InventoryTransferPublicId == transferId) ||
+                (isNumber && (transferLine.InventoryTransferLineId == number || transferLine.InventoryLotId == number)));
+        }
+
+        var transferLines = await query
             .OrderBy(transferLine => transferLine.CreatedAtUtc)
+            .ThenBy(transferLine => transferLine.InventoryTransferLineId)
             .Select(transferLine => new InventoryTransferLineResponse(
                 transferLine.CreatedAtUtc,
                 transferLine.QuantityRequested,
+                transferLine.InventoryTransferLineId,
+                transferLine.InventoryLotId,
                 new InventoryTransferResponse(
                     transferLine.InventoryTransfer.InventoryTransferPublicId,
                     transferLine.InventoryTransfer.TransferStatusCode,

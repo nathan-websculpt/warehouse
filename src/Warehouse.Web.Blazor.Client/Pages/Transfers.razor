@@ -1,0 +1,372 @@
+﻿@page "/transfers"
+@using System.Net
+@using System.Text.Json
+@using Warehouse.Contracts.InventoryTransferLines
+@using Warehouse.Web.Blazor.Client.Services
+@inject WarehouseApiClient Api
+
+<PageTitle>Transfers</PageTitle>
+
+<h1>Transfers</h1>
+
+<form @onsubmit="SearchAsync" @onsubmit:preventDefault>
+    <label for="transfer-search">Search transfers</label>
+    <input id="transfer-search"
+           style="width:32rem; max-width: 100%;"
+           @bind="_query"
+           @bind:event="oninput"
+           maxlength="100"
+           readonly="@_busy"
+           placeholder="Tenant, status, transfer ID, line ID, or lot ID" />
+
+    <button disabled="@_busy" type="submit">Search</button>
+    <button disabled="@_busy" @onclick="RefreshAsync" type="button">Refresh</button>
+</form>
+
+@if (_busy)
+{
+    <p role="status">Working...</p>
+}
+
+@if (_error is not null)
+{
+    <div class="alert alert-danger" role="alert">
+        <p>@_error</p>
+
+        @if (_traceId is not null)
+        {
+            <small>Reference: @_traceId</small>
+        }
+    </div>
+}
+
+@if (_searchLoaded && !_busy && _results.Count == 0)
+{
+    <p>No matching transfer lines.</p>
+}
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Line</th>
+            <th>Tenant</th>
+            <th>Transfer</th>
+            <th>Status</th>
+            <th>Quantity</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var line in _results)
+        {
+            var transfer = line.InventoryTransfer;
+
+            <tr @key="line.InventoryTransferLineId">
+                <td>@line.InventoryTransferLineId</td>
+                <td>@transfer.Tenant.TenantName</td>
+                <td>@transfer.InventoryTransferPublicId</td>
+                <td>@transfer.TransferStatusCode</td>
+                <td>@line.QuantityRequested</td>
+                <td>
+                    <button disabled="@_busy" @onclick="() => SelectAsync(line)">Inspect</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@* if _selectedTransferLine has a non-null value, call that value 'selectedTransferLine' and render the following block *@
+@if (_selectedTransferLine is { } selectedTransferLine)
+{
+    var transfer = selectedTransferLine.InventoryTransfer;
+
+    <h2>Transfer @transfer.InventoryTransferPublicId</h2>
+
+    <p>
+        @transfer.TransferStatusCode ::
+        Source location @transfer.SourceLocationId ->
+        Destination location @transfer.DestinationLocationId
+    </p>
+
+    @if (!_fresh)
+    {
+        <p role="status">Refresh this transfer before finalizing...</p>
+    }
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Line</th>
+                <th>Lot ID</th>
+                <th>Quantity Requested</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var line in _transferLines)
+            {
+                <tr class="@(line.InventoryTransferLineId == selectedTransferLine.InventoryTransferLineId ? "table-active" : null)">
+                    <td>@line.InventoryTransferLineId</td>
+                    <td>@line.InventoryLotId</td>
+                    <td>@line.QuantityRequested</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <p>Finalization processes every line in this transfer.</p>
+
+    @if (_reviewRequired)
+    {
+        <button disabled="@(_busy || !_fresh)" @onclick="Review">I reviewed the refreshed transfer</button>
+    }
+
+    <button disabled="@(!CanFinalize)" @onclick="FinalizeAsync">
+        @(transfer.TransferStatusCode == "RECEIVED" ? "Retrieve completion" : "Finalize entire transfer")
+    </button>
+
+    <TenantExplorer TenantPublicId="@transfer.Tenant.TenantPublicId" Disabled="@_busy" @key="_relatedVersion" />
+}
+
+@if (_completion is { } completion)
+{
+    <div class="alert alert-success" role="status">
+        Transfer @completion.Summary.InventoryTransferPublicId:
+        @completion.Summary.TransferStatusCode.
+
+        @(completion.Summary.IsReplay
+            ? "Previously completed; existing result retrieved."
+            : "Completion confirmed.")
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>SKU</th>
+                <th>Lot</th>
+                <th>Moved</th>
+                <th>Movement</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var movement in completion.Movements)
+            {
+                <tr>
+                    <td>@movement.SKU</td>
+                    <td>@movement.LotNumber</td>
+                    <td>
+                        @movement.QuantityMoved
+                        @movement.UnitOfMeasureCode
+                    </td>
+                    <td>@movement.InventoryMovementId</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private string _query = "";
+    private string _appliedQuery = "";
+
+    private List<InventoryTransferLineResponse> _results = [];
+    private List<InventoryTransferLineResponse> _transferLines = [];
+
+    private InventoryTransferLineResponse? _selectedTransferLine;
+    private CompleteInventoryTransferResponse? _completion;
+
+    private string? _error;
+    private string? _traceId;
+
+    private bool _busy;
+    private bool _fresh;
+    private bool _reviewRequired;
+    private bool _searchLoaded;
+
+    private int _relatedVersion;
+
+    private bool CanFinalize =>
+        !_busy &&
+        _fresh &&
+        !_reviewRequired &&
+        (_selectedTransferLine?.InventoryTransfer.TransferStatusCode
+            is "APPROVED" or "RECEIVED");
+
+    protected override Task OnInitializedAsync() => SearchAsync();
+
+    private Task SearchAsync() => RunAsync(async () =>
+    {
+        var query = _query.Trim();
+
+        var results = await Api.GetAsync<List<InventoryTransferLineResponse>>($"api/transfer-lines?q={Uri.EscapeDataString(query)}");
+
+        _appliedQuery = query;
+        _results = results;
+        _searchLoaded = true;
+
+        _selectedTransferLine = null;
+        _transferLines = [];
+        _completion = null;
+        _fresh = false;
+        _reviewRequired = false;
+    });
+
+    private Task SelectAsync(InventoryTransferLineResponse line) => RunAsync(async () =>
+    {
+        _fresh = false;
+        _selectedTransferLine = null;
+        _transferLines = [];
+        _completion = null;
+
+        await LoadSelectionAsync(line);
+
+        _reviewRequired = false;
+    });
+
+    private Task RefreshAsync() => RunAsync(async () =>
+    {
+        await RefreshDataAsync(_selectedTransferLine);
+    });
+
+    private async Task RefreshDataAsync(InventoryTransferLineResponse? selectedTransferLine)
+    {
+        _fresh = false;
+
+        _results =
+            await Api.GetAsync<List<InventoryTransferLineResponse>>(
+                $"api/transfer-lines?q=" +
+                Uri.EscapeDataString(_appliedQuery));
+
+        _searchLoaded = true;
+
+        if (selectedTransferLine is not null)
+        {
+            await LoadSelectionAsync(selectedTransferLine);
+        }
+    }
+
+    private async Task LoadSelectionAsync(InventoryTransferLineResponse selectedTransferLine)
+    {
+        _fresh = false;
+
+        var transfer = selectedTransferLine.InventoryTransfer;
+
+        var path =
+            $"api/transfer-lines?tenantId={transfer.Tenant.TenantId}" +
+            $"&inventoryTransferPublicId=" +
+            $"{transfer.InventoryTransferPublicId}";
+
+        var lines = await Api.GetAsync<List<InventoryTransferLineResponse>>(path);
+
+        _transferLines = lines;
+
+        _selectedTransferLine = lines.SingleOrDefault(line => line.InventoryTransferLineId == selectedTransferLine.InventoryTransferLineId);
+
+        _fresh = _selectedTransferLine is not null;
+        _relatedVersion++;
+
+        if (_selectedTransferLine is null)
+        {
+            _error = "The selected line is no longer available.";
+        }
+    }
+
+    private void Review()
+    {
+        if (!_busy && _fresh) { _reviewRequired = false; }
+    }
+
+    private async Task FinalizeAsync()
+    {
+        if (!CanFinalize || _selectedTransferLine is null) { return; }
+
+        var selectedTransferLine = _selectedTransferLine;
+
+        await RunAsync(async () =>
+        {
+            _completion = null;
+            _reviewRequired = true;
+            _fresh = false;
+
+            try
+            {
+                _completion = await Api.FinalizeAsync(selectedTransferLine.InventoryTransfer);
+                _reviewRequired = false;
+            }
+            catch (WarehouseApiException exception)
+            {
+                // the => arrows here are switch-arm separators... “for this matching case, use this result”
+                //      each comma-separated entry is called an arm
+                //      _ is a discard pattern... it matches any value without introducing a variable name. Here it acts as “match any status"
+                var guidance = exception.StatusCode switch
+                {
+                    HttpStatusCode.Conflict => "The transfer state or version changed. Review the refreshed transfer.",
+
+                    HttpStatusCode.ServiceUnavailable => "A temporary failure occurred. Review the refreshed transfer before retrying.",
+
+                    _ when (int)exception.StatusCode >= 500 => "Completion could not be confirmed. Check the refreshed state.",
+
+                    _ => "Finalization was rejected."
+                };
+
+                _error = $"{guidance} {exception.Message}";
+                _traceId = exception.TraceId;
+            }
+            catch (Exception exception) 
+                when (IsTransportFailure(exception))
+            {
+                _error = "Completion could not be confirmed. The request may have completed. Check the refreshed transfer before retrying.";
+            }
+
+            try
+            {
+                await RefreshDataAsync(selectedTransferLine);
+            }
+            catch (Exception exception) 
+                when (exception is WarehouseApiException || IsTransportFailure(exception))
+            {
+                _fresh = false;
+                _reviewRequired = true;
+
+                _error = (_error ??
+                    (_completion is not null
+                        ? "Completion was confirmed."
+                        : "Completion could not be confirmed.")) +
+                    " Reload failed. Refresh before another command.";
+            }
+        });
+    }
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        if (_busy) { return; }
+
+        _busy = true;
+        _error = null;
+        _traceId = null;
+
+        try
+        {
+            await action();
+        }
+        catch (WarehouseApiException exception)
+        {
+            _error = exception.Message;
+            _traceId = exception.TraceId;
+        }
+        catch (Exception exception) 
+            when (IsTransportFailure(exception))
+        {
+            _error = "The data could not be loaded. Try refreshing.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static bool IsTransportFailure(Exception exception) =>
+        exception is HttpRequestException
+            or OperationCanceledException
+            or JsonException
+            or NotSupportedException;
+}

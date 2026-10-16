@@ -1,8 +1,15 @@
+# Warehouse
+
+**A multi-tenant warehouse allocation, fulfillment, and reconciliation platform**
+
 ## Prerequisites
 
 - .NET 10 SDK
 - SQL Server
 - sqlcmd
+- Aspire
+
+Install Aspire (from any directory): `winget install Microsoft.Aspire`; after installation, open a new terminal and verify installation with: `aspire --version`
 
 ## Setup
 
@@ -10,7 +17,7 @@ The API needs a `ConnectionStrings:Warehouse` value and database setup
 
 `ConnectionStrings__Warehouse` is the environment-variable alternative
 
-Example (`<database-name>` must match the database created by the setup scripts - currently `WarehouseDev`):
+Example (`<database-name>` must match the database created by the setup scripts -- currently `WarehouseDev`):
 
 ```powershell
 dotnet user-secrets set --project .\src\Warehouse.Api `
@@ -40,7 +47,7 @@ if ($LASTEXITCODE -ne 0) {
 
 ## Starting over
 
-### Warning - drops database
+### Warning -- drops database
 
 In powershell
 
