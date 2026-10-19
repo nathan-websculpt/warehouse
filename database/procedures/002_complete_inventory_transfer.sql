@@ -12,6 +12,10 @@ GO
     Approved/received headers and line sets must be immutable outside their
     controlled workflow. A header RowVersion does not version its child lines.
 
+    Database guards freeze approved/received headers and line sets. Editable
+    line changes advance the parent RowVersion under a parent update lock.
+    @RetrieveOnly validates RECEIVED history and can never enter posting.
+
     Returns two result sets, after commit:
       1. Transfer summary, including RowVersion and IsReplay.
       2. Durable movement details, ordered by InventoryTransferLineId.
@@ -25,7 +29,8 @@ GO
 CREATE OR ALTER PROCEDURE dbo.CompleteInventoryTransfer
     @TenantId INT,
     @InventoryTransferPublicId UNIQUEIDENTIFIER,
-    @ExpectedRowVersion BINARY(8)
+    @ExpectedRowVersion BINARY(8) = NULL,
+    @RetrieveOnly BIT = 0
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -53,7 +58,10 @@ BEGIN
     IF @InventoryTransferPublicId IS NULL
         THROW 51000, N'InventoryTransferPublicId is required.', 1;
 
-    IF @ExpectedRowVersion IS NULL
+    IF @RetrieveOnly IS NULL
+        THROW 51000, N'RetrieveOnly is required.', 1;
+
+    IF @RetrieveOnly = 0 AND @ExpectedRowVersion IS NULL
         THROW 51000, N'ExpectedRowVersion is required.', 1;
 
     DECLARE
@@ -128,6 +136,10 @@ BEGIN
         IF @InventoryTransferId IS NULL
             THROW 51001, N'Transfer not found for this tenant.', 1;
 
+        -- check inside the serialized decision, before the APPROVED posting branch
+        IF @RetrieveOnly = 1 AND @CurrentStatus <> 'RECEIVED'
+            THROW 51015, N'This transfer has no completed receipt to retrieve.', 1;
+
         -- a replay accepts the caller's original precompletion version
         IF @CurrentStatus <> 'RECEIVED'
         BEGIN
@@ -135,7 +147,7 @@ BEGIN
                 THROW 51002, N'Transfer must be APPROVED before completion.', 1;
 
             IF @CurrentRowVersion <> @ExpectedRowVersion
-                THROW 51003, N'The transfer has changed. Refresh its RowVersion.', 1;
+                THROW 51003, N'The transfer changed. Refresh it and review its details before another command.', 1;
         END;
 
         INSERT INTO @Lines
@@ -275,7 +287,7 @@ BEGIN
 
             IF @InvalidLineId IS NOT NULL
             BEGIN
-                SET @ErrorMessage = CONCAT(N'Product must be active for transfer line ', @InvalidLineId, N'.');
+                SELECT @ErrorMessage = CONCAT(N'Product must be active: ', SKU, N', lot ', LotNumber, N'.') FROM @Lines WHERE InventoryTransferLineId = @InvalidLineId;
                 THROW 51009, @ErrorMessage, 1;
             END;
 
@@ -286,7 +298,7 @@ BEGIN
 
             IF @InvalidLineId IS NOT NULL
             BEGIN
-                SET @ErrorMessage = CONCAT(N'Lot must have at least seven UTC calendar days of shelf life for transfer line ', @InvalidLineId, N'.');
+                SELECT @ErrorMessage = CONCAT(N'Lot must have at least seven UTC calendar days of shelf life: ', SKU, N', lot ', LotNumber, N'.') FROM @Lines WHERE InventoryTransferLineId = @InvalidLineId;
                 THROW 51010, @ErrorMessage, 1;
             END;
 
@@ -326,7 +338,7 @@ BEGIN
 
             IF @InvalidLineId IS NOT NULL
             BEGIN
-                SET @ErrorMessage = CONCAT(N'No balance exists for the exact source location and lot of transfer line ', @InvalidLineId, N'.');
+                SELECT @ErrorMessage = CONCAT(N'No balance exists at the exact source location for ', SKU, N', lot ', LotNumber, N'.') FROM @Lines WHERE InventoryTransferLineId = @InvalidLineId;
                 THROW 51011, @ErrorMessage, 1;
             END;
 
@@ -340,7 +352,7 @@ BEGIN
 
             IF @InvalidLineId IS NOT NULL
             BEGIN
-                SET @ErrorMessage = CONCAT(N'Insufficient unreserved source stock for transfer line ', @InvalidLineId, N'.');
+                SELECT @ErrorMessage = CONCAT(N'Insufficient unreserved source stock for ', SKU, N', lot ', LotNumber, N'.') FROM @Lines WHERE InventoryTransferLineId = @InvalidLineId;
                 THROW 51013, @ErrorMessage, 1;
             END;
 

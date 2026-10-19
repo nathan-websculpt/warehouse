@@ -22,4 +22,10 @@ public partial class Warehouse
     public DateTime? UpdatedAtUtc { get; set; }
 
     public virtual Tenant Tenant { get; set; } = null!;
+
+    public virtual WarehouseAddress? WarehouseAddress { get; set; }
+
+    public virtual ICollection<WarehouseContact> WarehouseContacts { get; set; } = new List<WarehouseContact>();
+
+    public virtual ICollection<WarehouseLocation> WarehouseLocations { get; set; } = new List<WarehouseLocation>();
 }

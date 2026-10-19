@@ -21,5 +21,11 @@ public partial class InventoryMovement
 
     public DateTime CreatedAtUtc { get; set; }
 
+    public virtual InventoryLot InventoryLot { get; set; } = null!;
+
     public virtual InventoryTransferLine InventoryTransferLine { get; set; } = null!;
+
+    public virtual WarehouseLocation WarehouseLocation { get; set; } = null!;
+
+    public virtual WarehouseLocation WarehouseLocationNavigation { get; set; } = null!;
 }

@@ -193,7 +193,7 @@ BEGIN TRY
     OUTPUT INSERTED.InventoryTransferId
     INTO @InsertedId (Id)
     VALUES
-    (@MedOneTenantId, 'RECEIVED', @MainLocationId, @ReserveLocationId, @CompletedAtUtc, @CompletedAtUtc);
+    (@MedOneTenantId, 'DRAFT', @MainLocationId, @ReserveLocationId, @CompletedAtUtc, @CompletedAtUtc);
 
     SELECT @InventoryTransferId = Id
     FROM @InsertedId;
@@ -250,7 +250,14 @@ BEGIN TRY
     (@MedOneTenantId, @MainLocationId, @InventoryLotId, 70.0000, 0.0000, @CompletedAtUtc, @CompletedAtUtc),
     (@MedOneTenantId, @ReserveLocationId, @InventoryLotId, 30.0000, 0.0000, @CompletedAtUtc, NULL);
 
-	COMMIT TRANSACTION;
+    -- preserve the historical receipt without bypassing content guards
+    UPDATE dbo.InventoryTransfers SET TransferStatusCode = 'APPROVED'
+    WHERE InventoryTransferId = @InventoryTransferId;
+
+    UPDATE dbo.InventoryTransfers SET TransferStatusCode = 'RECEIVED', UpdatedAtUtc = @CompletedAtUtc
+    WHERE InventoryTransferId = @InventoryTransferId;
+	
+    COMMIT TRANSACTION;
 
 END TRY
 BEGIN CATCH

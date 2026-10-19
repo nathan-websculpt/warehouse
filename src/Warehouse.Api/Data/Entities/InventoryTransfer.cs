@@ -26,4 +26,10 @@ public partial class InventoryTransfer
     public virtual ICollection<InventoryTransferLine> InventoryTransferLines { get; set; } = new List<InventoryTransferLine>();
 
     public virtual Tenant Tenant { get; set; } = null!;
+
+    public virtual InventoryTransferStatus TransferStatusCodeNavigation { get; set; } = null!;
+
+    public virtual WarehouseLocation WarehouseLocation { get; set; } = null!;
+
+    public virtual WarehouseLocation WarehouseLocationNavigation { get; set; } = null!;
 }

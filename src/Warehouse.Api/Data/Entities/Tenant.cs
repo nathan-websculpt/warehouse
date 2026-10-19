@@ -21,5 +21,7 @@ public partial class Tenant
 
     public virtual ICollection<InventoryTransfer> InventoryTransfers { get; set; } = new List<InventoryTransfer>();
 
+    public virtual ICollection<Product> Products { get; set; } = new List<Product>();
+
     public virtual ICollection<Warehouse> Warehouses { get; set; } = new List<Warehouse>();
 }

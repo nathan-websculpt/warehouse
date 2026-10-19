@@ -473,21 +473,21 @@ BEGIN TRY
 		INSERTED.InventoryTransferPublicId
 	INTO @InsertedTransfers (InventoryTransferId, InventoryTransferPublicId)
 	VALUES
-	(@Transfer1PublicId,  @GreenleafGardenTenantId, 'APPROVED', @GSourceId,   @GDestId),
-	(@Transfer2PublicId,  @GreenleafGardenTenantId, 'APPROVED', @GSourceId,   @GDestId),
-	(@Transfer3PublicId,  @GreenleafGardenTenantId, 'APPROVED', @GSourceId,   @GDestId),
-	(@Transfer4PublicId,  @GreenleafGardenTenantId, 'APPROVED', @GSourceId,   @GDestId),
-	(@Transfer5PublicId,  @GreenleafGardenTenantId, 'APPROVED', @GSourceId,   @GDestId),
-	(@Transfer6PublicId,  @GreenleafGardenTenantId, 'APPROVED', @GSourceId,   @GDestId),
-	(@Transfer7PublicId,  @GreenleafGardenTenantId, 'APPROVED', @GOverflowId, @GDestId),
-	(@Transfer8PublicId,  @GreenleafGardenTenantId, 'APPROVED', @GOverflowId, @GDest2Id),
-	(@Transfer9PublicId,  @GreenleafGardenTenantId, 'APPROVED', @GSourceId,   @GDest2Id),
-	(@Transfer10PublicId, @GreenleafGardenTenantId, 'APPROVED', @GOverflowId, @GDest2Id),
-	(@Transfer11PublicId, @GreenleafGardenTenantId, 'DRAFT',    @GSourceId,   @GDestId),
-	(@Transfer12PublicId, @GreenleafGardenTenantId, 'APPROVED', @GSourceId,   @GInactiveId),
-	(@Transfer13PublicId, @GreenleafGardenTenantId, 'APPROVED', @GSourceId,   @GDestId),
-	(@Transfer14PublicId, @FertilizersTenantId,     'APPROVED', @FSourceId,   @FDestId),
-	(@Transfer15PublicId, @GreenleafGardenTenantId, 'APPROVED', @GSourceId,   @GDestId);
+	(@Transfer1PublicId,  @GreenleafGardenTenantId, 'DRAFT', @GSourceId,   @GDestId),
+	(@Transfer2PublicId,  @GreenleafGardenTenantId, 'DRAFT', @GSourceId,   @GDestId),
+	(@Transfer3PublicId,  @GreenleafGardenTenantId, 'DRAFT', @GSourceId,   @GDestId),
+	(@Transfer4PublicId,  @GreenleafGardenTenantId, 'DRAFT', @GSourceId,   @GDestId),
+	(@Transfer5PublicId,  @GreenleafGardenTenantId, 'DRAFT', @GSourceId,   @GDestId),
+	(@Transfer6PublicId,  @GreenleafGardenTenantId, 'DRAFT', @GSourceId,   @GDestId),
+	(@Transfer7PublicId,  @GreenleafGardenTenantId, 'DRAFT', @GOverflowId, @GDestId),
+	(@Transfer8PublicId,  @GreenleafGardenTenantId, 'DRAFT', @GOverflowId, @GDest2Id),
+	(@Transfer9PublicId,  @GreenleafGardenTenantId, 'DRAFT', @GSourceId,   @GDest2Id),
+	(@Transfer10PublicId, @GreenleafGardenTenantId, 'DRAFT', @GOverflowId, @GDest2Id),
+	(@Transfer11PublicId, @GreenleafGardenTenantId, 'DRAFT', @GSourceId,   @GDestId),
+	(@Transfer12PublicId, @GreenleafGardenTenantId, 'DRAFT', @GSourceId,   @GInactiveId),
+	(@Transfer13PublicId, @GreenleafGardenTenantId, 'DRAFT', @GSourceId,   @GDestId),
+	(@Transfer14PublicId, @FertilizersTenantId,     'DRAFT', @FSourceId,   @FDestId),
+	(@Transfer15PublicId, @GreenleafGardenTenantId, 'DRAFT', @GSourceId,   @GDestId);
 
 	-- extract
 	SELECT @Transfer1Id = InventoryTransferId
@@ -568,12 +568,17 @@ BEGIN TRY
 	(@GreenleafGardenTenantId, @Transfer7Id, @TomatoBLotId, 20.0000),
 	(@GreenleafGardenTenantId, @Transfer8Id, @TomatoBLotId, 20.0000),
 	(@GreenleafGardenTenantId, @Transfer9Id, @FertALotId, 10.0000),
-	(@GreenleafGardenTenantId, @Transfer10Id,@FertALotId, 10.0000),
-	(@GreenleafGardenTenantId, @Transfer11Id,@BasilALotId, 5.0000),
-	(@GreenleafGardenTenantId, @Transfer12Id,@TomatoALotId, 5.0000),
+	(@GreenleafGardenTenantId, @Transfer10Id, @FertALotId, 10.0000),
+	(@GreenleafGardenTenantId, @Transfer11Id, @BasilALotId, 5.0000),
+	(@GreenleafGardenTenantId, @Transfer12Id, @TomatoALotId, 5.0000),
 	(@FertilizersTenantId, @Transfer14Id, @FertilizersRUsTomatoALotId, 25.0000),
 	(@GreenleafGardenTenantId, @Transfer15Id, @BasilALotId, 5.0000);
 
+	-- build editable line sets first, then freeze the intended approved scenarios
+	UPDATE transfer SET TransferStatusCode = 'APPROVED', UpdatedAtUtc = SYSUTCDATETIME()
+	FROM dbo.InventoryTransfers AS transfer
+	INNER JOIN @InsertedTransfers AS seeded ON seeded.InventoryTransferId = transfer.InventoryTransferId
+	WHERE seeded.InventoryTransferPublicId <> @Transfer11PublicId;
 	COMMIT TRANSACTION;
 
 END TRY

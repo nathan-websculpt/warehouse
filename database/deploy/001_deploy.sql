@@ -19,6 +19,8 @@ GO
 :r .\schema\012_create_states.sql
 :r .\schema\013_create_warehouse_addresses.sql
 :r .\schema\014_create_warehouse_contacts.sql
+:r .\schema\015_transfer_workflow_guards.sql
+:r .\schema\016_transfer_paging_indexes.sql
 
 -- create sprocs
 :r .\procedures\001_get_warehouse_stock_availability.sql

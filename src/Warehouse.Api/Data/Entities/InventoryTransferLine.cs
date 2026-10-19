@@ -17,6 +17,8 @@ public partial class InventoryTransferLine
 
     public DateTime CreatedAtUtc { get; set; }
 
+    public virtual InventoryLot InventoryLot { get; set; } = null!;
+
     public virtual ICollection<InventoryMovement> InventoryMovements { get; set; } = new List<InventoryMovement>();
 
     public virtual InventoryTransfer InventoryTransfer { get; set; } = null!;
