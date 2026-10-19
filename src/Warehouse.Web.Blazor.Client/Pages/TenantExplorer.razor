@@ -1,73 +1,89 @@
-﻿@using System.Text.Json
-@using Warehouse.Contracts.Tenants
-@using Warehouse.Contracts.Warehouses
-@using Warehouse.Contracts.StockAvailability
 @using Warehouse.Web.Blazor.Client.Services
 @inject WarehouseApiClient Api
+@implements IDisposable
 
 <hr />
-<h3>TenantExplorer.razor -- Related records</h3>
 
-<button disabled="@(_busy || Disabled)" @onclick="ReloadAsync">Reload related records</button>
+<h3>Related records</h3>
 
-@if (_tenant is { } tenant)
+<button type="button" disabled="@(Explorer.IsLoading || Disabled)" @onclick="Explorer.RefreshAsync">Refresh related records</button>
+
+@if (Explorer.Tenant is { } tenant)
 {
-    <p>
-        Tenant: @tenant.TenantName ::
-        Active: @tenant.IsActive
-    </p>
+    <p>Tenant: @tenant.TenantName :: Active: @tenant.IsActive</p>
 }
 
-@if (_busy)
-{
-    <p role="status">Loading related records...</p>
-}
+@if (Explorer.IsLoading) { <p role="status">Loading related records...</p> }  
+@if (Explorer.Error is not null) { <p role="alert">@Explorer.Error</p> }
 
-@if (_error is not null)
-{
-    <p role="alert">@_error</p>
-}
-
-@foreach (var warehouse in _warehouses)
-{
-    <button disabled="@(_busy || Disabled)" @onclick="() => LoadStockAsync(warehouse)">
+@foreach (var warehouse in Explorer.Warehouses)
+{ 
+    <button 
+        type="button"
+        disabled="@(Explorer.IsLoading || Disabled)"
+        aria-pressed="@(Stock.Scope?.WarehousePublicId == warehouse.WarehousePublicId ? "true" : "false")"
+        @onclick="() => Stock.SelectAsync(new(TenantPublicId, warehouse.WarehousePublicId), warehouse.WarehouseName)">
         @warehouse.WarehouseCode -- @warehouse.WarehouseName
     </button>
 }
 
-@if (_warehouseName is not null)
+@if (Stock.Scope is not null)
 {
-    <h4>Stock availability: @_warehouseName</h4>
+    <h4>Stock availability: @Stock.WarehouseName</h4>
 
-    @if (!_busy && _error is null && _stock.Count == 0)
+    <button type="button" disabled="@(Stock.IsLoading || Disabled)" @onclick="Stock.RefreshAsync">Refresh stock report</button>
+
+    <p>Low-stock threshold: @Stock.Scope.LowStockThreshold.ToString("0.####")</p>
+
+    @if (Stock.IsLoading) { <p role="status">Loading stock report; the latest successful report remains visible.</p> }
+    @if (Stock.Error is not null) { <p role="alert">@Stock.Error</p> }
+
+    @if (Stock.HasSuccessfulReport)
     {
-        <p>No stock records were returned.</p>
-    }
+        <p>Last load completed: @Stock.LoadedAtUtc?.ToString("u") (client time... not a database snapshot timestamp).</p>
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>SKU</th>
-                <th>Product</th>
-                <th>Available to pick</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in _stock)
-            {
-                <tr>
-                    <td>@item.SKU</td>
-                    <td>@item.ProductName</td>
-                    <td>
-                        @item.AvailableToPick
-                        @item.UnitOfMeasureCode
-                    </td>
-                    <td>@item.StockStatus</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+        @if (Stock.Latest.Count == 0) { 
+            <p>No stock records were returned.</p> 
+        } 
+        else
+        {
+            <p>Report date (UTC): @string.Join(", ", Stock.Latest.Select(row => row.ReportDateUtc.ToString("yyyy-MM-dd")).Distinct())</p>
+
+            <p class="text-muted">
+                Expired stock means expired stock in active locations. Inactive-location stock is reported separately. Availability is not proof of transfer eligibility.
+            </p>
+            
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>SKU</th>
+                            <th>Product</th>
+                            <th>Available to pick</th>
+                            <th>Eligible reserved</th>
+                            <th>Expired on-hand</th>
+                            <th>Inactive-location on-hand</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead> 
+                    <tbody>
+                        @foreach (var item in Stock.Latest)
+                        {
+                            <tr @key="item.ProductPublicId">
+                                <td>@item.SKU</td>
+                                <td>@item.ProductName</td>
+                                <td>@Quantity(item.AvailableToPick, item.UnitOfMeasureCode)</td>
+                                <td>@Quantity(item.EligibleReserved, item.UnitOfMeasureCode)</td>
+                                <td>@Quantity(item.ExpiredOnHand, item.UnitOfMeasureCode)</td>
+                                <td>@Quantity(item.InactiveLocationOnHand, item.UnitOfMeasureCode)</td>
+                                <td>@item.StockStatus</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
 }
 
 <hr />
@@ -76,78 +92,30 @@
     // Parameter Attribute means: this property is an input that another component can supply
     [Parameter]
     public Guid TenantPublicId { get; set; }
-
     [Parameter]
     public bool Disabled { get; set; }
+    [Parameter]
+    public int RefreshVersion { get; set; }
 
-    private TenantResponse? _tenant;
-    private List<WarehouseResponse> _warehouses = [];
-    private List<StockAvailabilityResponse> _stock = [];
-
-    private Guid? _loadedTenant;
-    private string? _warehouseName;
-    private string? _error;
-    private bool _busy;
+    private TenantExplorerSession Explorer { get; set; } = null!;
+    private StockReportSession Stock => Explorer.Stock;
+    private int _refreshVersion;
+    private static string Quantity(decimal value, string unit) => $"{value:0.####} {unit}";
+    protected override void OnInitialized() => Explorer = new(Api);
 
     protected override async Task OnParametersSetAsync()
     {
-        if (_loadedTenant == TenantPublicId) { return; }
-        _loadedTenant = TenantPublicId;
-        await ReloadAsync();
-    }
-
-    // when someone calls ReloadAsync, give RunAsync this asynchronous work to perform, and return its task
-    private Task ReloadAsync() => RunAsync(async () =>
-    {
-        _tenant = null;
-        _warehouses = [];
-        _stock = [];
-        _warehouseName = null;
-
-        _tenant = await Api.GetAsync<TenantResponse>($"api/tenants/{TenantPublicId}");
-
-        _warehouses = await Api.GetAsync<List<WarehouseResponse>>($"api/tenants/{TenantPublicId}/warehouses");
-    });
-
-    private Task LoadStockAsync(WarehouseResponse warehouse) => RunAsync(async () =>
-    {
-        _stock = [];
-        _warehouseName = warehouse.WarehouseName;
-
-        _stock =
-            await Api.GetAsync<List<StockAvailabilityResponse>>(
-                $"api/tenants/{TenantPublicId}/warehouses/" +
-                $"{warehouse.WarehousePublicId}/stock-availability");
-    });
-
-    private async Task RunAsync(Func<Task> action)
-    {
-        if (_busy) { return; }
-
-        _busy = true;
-        _error = null;
-
-        try
+        if (Explorer.TenantPublicId != TenantPublicId)
         {
-            await action();
+            _refreshVersion = RefreshVersion;
+            await Explorer.SelectTenantAsync(TenantPublicId);
         }
-        catch (WarehouseApiException exception)
+        else if (_refreshVersion != RefreshVersion)
         {
-            _error = exception.TraceId is null
-                ? exception.Message
-                : $"{exception.Message} Reference: {exception.TraceId}";
-        }
-        catch (Exception exception) when (
-            exception is HttpRequestException
-                or OperationCanceledException
-                or JsonException
-                or NotSupportedException)
-        {
-            _error = "Related records could not be loaded.";
-        }
-        finally
-        {
-            _busy = false;
+            _refreshVersion = RefreshVersion;
+            await Explorer.RefreshAsync();
         }
     }
+
+    public void Dispose() => Explorer?.Dispose();
 }

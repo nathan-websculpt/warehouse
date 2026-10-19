@@ -1,5 +1,7 @@
 ﻿@inherits LayoutComponentBase
 
+@inject NavigationManager Navigation
+
 <div class="page">
     <div class="sidebar">
         <NavMenu />
@@ -11,13 +13,27 @@
         </div>
 
         <article class="content px-4">
-            @Body
+            <WorkflowErrorBoundary @ref="_boundary">
+                <ChildContent>@Body</ChildContent>
+                <ErrorContent>
+                    <div role="alert" class="alert alert-danger">
+                        <p>This view could not be displayed. Reload it to retrieve current data before another command.</p>
+                        <p>Reference: @_boundary?.Reference</p>
+                        <button type="button" @onclick="Reload">Reload view</button>
+                    </div>
+                </ErrorContent>
+            </WorkflowErrorBoundary>
         </article>
     </main>
 </div>
 
+@code {
+    private WorkflowErrorBoundary? _boundary;
+    private void Reload() => Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+}
+
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
+    <span class="dismiss">X</span>
 </div>

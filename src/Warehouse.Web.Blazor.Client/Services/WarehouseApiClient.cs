@@ -3,6 +3,10 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Warehouse.Contracts.InventoryTransferLines;
 using Warehouse.Contracts.InventoryTransfers;
+using Warehouse.Contracts.Errors;
+using Warehouse.Contracts.Paging;
+using Warehouse.Contracts.StockAvailability;
+using System.Globalization;
 
 /*
  * STUDY NOTES:
@@ -19,9 +23,22 @@ namespace Warehouse.Web.Blazor.Client.Services;
 
 public sealed class WarehouseApiClient(HttpClient http)
 {
+    public Task<PagedResponse<InventoryTransferResponse>> SearchTransfersAsync(string query, int pageSize, string? cursor, CancellationToken cancellationToken = default) =>
+        GetAsync<PagedResponse<InventoryTransferResponse>>($"api/transfers?q={Uri.EscapeDataString(query)}&pageSize={pageSize}" +
+            (cursor is null ? "" : $"&cursor={Uri.EscapeDataString(cursor)}"), cancellationToken);  
+      
+    public Task<InventoryTransferDetailResponse> GetTransferAsync(InventoryTransferResponse transfer, CancellationToken cancellationToken = default) =>
+        GetAsync<InventoryTransferDetailResponse>($"api/transfers/{transfer.Tenant.TenantId}/{transfer.InventoryTransferPublicId}", cancellationToken);
+
+    public Task<CompleteInventoryTransferResponse> RetrieveCompletionAsync(InventoryTransferResponse transfer, CancellationToken cancellationToken = default) =>
+        GetAsync<CompleteInventoryTransferResponse>($"api/transfers/{transfer.Tenant.TenantId}/{transfer.InventoryTransferPublicId}/completion", cancellationToken);
+
+    public Task<List<StockAvailabilityResponse>> GetStockAsync(StockReportScope scope, CancellationToken cancellationToken = default) =>
+        GetAsync<List<StockAvailabilityResponse>>($"api/tenants/{scope.TenantPublicId}/warehouses/{scope.WarehousePublicId}/stock-availability?lowStockThreshold={scope.LowStockThreshold.ToString(CultureInfo.InvariantCulture)}", cancellationToken);
+
     public async Task<T> GetAsync<T>(string path, CancellationToken cancellationToken = default) where T : class
     {
-        using var response = await http.GetAsync(path, cancellationToken);
+        using var response = await http.GetAsync(path, cancellationToken); 
         return await ReadAsync<T>(response, cancellationToken);
     }
 
@@ -47,7 +64,6 @@ public sealed class WarehouseApiClient(HttpClient http)
         }
 
         ApiProblem? problem = null;
-
         try
         {
             problem = await response.Content.ReadFromJsonAsync<ApiProblem>(cancellationToken: cancellationToken);
@@ -71,18 +87,13 @@ public sealed class WarehouseApiClient(HttpClient http)
             validation
                 ?? problem?.Detail
                 ?? problem?.Title
-                ?? $"The API returned HTTP {(int)response.StatusCode}.", problem?.TraceId);
+                ?? $"The API returned HTTP {(int)response.StatusCode}.", problem?.TraceId, problem?.Code);
     }
 }
-
-public sealed record ApiProblem(
-    string? Title,
-    string? Detail,
-    string? TraceId,
-    Dictionary<string, string[]>? Errors);
-
-public sealed class WarehouseApiException(HttpStatusCode statusCode, string message, string? traceId) : Exception(message)
+   
+public sealed class WarehouseApiException(HttpStatusCode statusCode, string message, string? traceId, string? code = null) : Exception(message)
 {
     public HttpStatusCode StatusCode { get; } = statusCode;
     public string? TraceId { get; } = traceId;
+    public string? Code { get; } = code;
 }
