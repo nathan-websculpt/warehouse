@@ -1,17 +1,21 @@
 ﻿using Microsoft.Data.SqlClient;
 using System.Data;
 using Warehouse.Contracts.StockAvailability;
+using Warehouse.Api.Infrastructure;
 
 namespace Warehouse.Api.Data.Queries;
 
 public sealed class StockAvailabilityQuery(SqlConnectionFactory connectionFactory)
 {
+    // dbo.GetWarehouseStockAvailability
     public async Task<IReadOnlyList<StockAvailabilityResponse>> ExecuteAsync(
         int tenantId,
         Guid warehousePublicId,
         decimal lowStockThreshold,
         CancellationToken cancellationToken)
     {
+        if (!StockThreshold.IsValid(lowStockThreshold)) { throw new ArgumentOutOfRangeException(nameof(lowStockThreshold), StockThreshold.ValidationMessage); }
+        
         await using var connection = connectionFactory.CreateConnection();
 
         await connection.OpenAsync(cancellationToken);
@@ -47,7 +51,7 @@ public sealed class StockAvailabilityQuery(SqlConnectionFactory connectionFactor
                 Scale = 4,
                 Value = lowStockThreshold
             });
-
+          
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 
         var productPublicIdOrdinal = reader.GetOrdinal("ProductPublicId");
@@ -87,4 +91,4 @@ public sealed class StockAvailabilityQuery(SqlConnectionFactory connectionFactor
 
         return results;
     }
-}
+} 

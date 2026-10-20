@@ -16,9 +16,21 @@ public sealed class CompleteInventoryTransferQuery(SqlConnectionFactory connecti
     {
         ArgumentNullException.ThrowIfNull(expectedRowVersion);
         if (expectedRowVersion.Length != 8)
-        {
             throw new ArgumentException("ExpectedRowVersion must be exactly 8 bytes.", nameof(expectedRowVersion));
-        }
+
+        return await ReadAsync(tenantId, inventoryTransferPublicId, expectedRowVersion, false, cancellationToken);
+    }
+
+    public Task<CompleteInventoryTransferResponse> RetrieveAsync(int tenantId, Guid inventoryTransferPublicId, CancellationToken cancellationToken) =>
+        ReadAsync(tenantId, inventoryTransferPublicId, null, true, cancellationToken);
+
+    private async Task<CompleteInventoryTransferResponse> ReadAsync(
+        int tenantId,
+        Guid inventoryTransferPublicId,
+        byte[]? expectedRowVersion,
+        bool retrieveOnly,
+        CancellationToken cancellationToken)
+    {
 
         await using var connection = connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
@@ -43,7 +55,13 @@ public sealed class CompleteInventoryTransferQuery(SqlConnectionFactory connecti
         command.Parameters.Add(
             new SqlParameter("@ExpectedRowVersion", SqlDbType.Binary, 8)
             {
-                Value = expectedRowVersion
+                Value = (object?)expectedRowVersion ?? DBNull.Value
+            });
+
+        command.Parameters.Add(
+            new SqlParameter("@RetrieveOnly", SqlDbType.Bit) 
+            {  
+                Value = retrieveOnly
             });
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
@@ -57,9 +75,7 @@ public sealed class CompleteInventoryTransferQuery(SqlConnectionFactory connecti
         var isReplayOrdinal = reader.GetOrdinal("IsReplay");
 
         if (!await reader.ReadAsync(cancellationToken))
-        {
             throw new InvalidOperationException("Expected a Transfer Summary.");
-        }
 
         var summary = new InventoryTransferCompletionSummaryResponse(
             reader.GetGuid(transferPublicIdOrdinal),
@@ -74,9 +90,7 @@ public sealed class CompleteInventoryTransferQuery(SqlConnectionFactory connecti
         // result set 2: Movements
 
         if (!await reader.NextResultAsync(cancellationToken))
-        {
             throw new InvalidOperationException("Expected the movement result set.");
-        }
 
         var inventoryTransferLineIdOrdinal = reader.GetOrdinal("InventoryTransferLineId");
         var skuOrdinal = reader.GetOrdinal("SKU");
@@ -103,9 +117,8 @@ public sealed class CompleteInventoryTransferQuery(SqlConnectionFactory connecti
         }
 
         if (movements.Count != summary.LineCount)
-        {
             throw new InvalidOperationException("Movement count does not match the transfer summary.");
-        }
+
 
         return new CompleteInventoryTransferResponse(summary, movements);
     }

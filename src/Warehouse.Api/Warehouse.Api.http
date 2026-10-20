@@ -1,39 +1,81 @@
 @Warehouse.Api_HostAddress = http://localhost:5189
+@TransferTenantId = 1
+@InvalidPublicId = 00000000-0000-0000-0000-000000000001
+@TransferPublicId = 1a15df1c-6af2-495a-8a39-8da6a7aa37a6
+@TenantPublicId = 3e88f06f-530f-41e9-998e-1ec23725a0e2
+@WarehousePublicId = 6285358d-f941-412f-b291-72dc36b06ce1
+@TransferCursor = eyJWZXJzaW9uIjoxLCJDcmVhdGVkQXRVdGMiOiIyMDI2LTEwLTE5VDIyOjIwOjUwLjk2OTg4MzUiLCJJZCI6NywiQmFja3dhcmRzIjpmYWxzZSwiQ29udGV4dCI6IjAyQUQzNTZBQTExMjgxRDhGMkYzNkQ2MkFBRUU1MTNEMTkzNDgzQTcwOEIwNjMyNEY0Rjk4RkFGNUNGNEYwQkYifQ
 
+### database readiness (development only)
+GET {{Warehouse.Api_HostAddress}}/health
+
+### process liveness (development only -- independent of SQL)
+GET {{Warehouse.Api_HostAddress}}/alive
+
+### first page (search transfers by Product SKU)
+GET {{Warehouse.Api_HostAddress}}/api/transfers?q=P1-TOMATO-SEED&pageSize=5
+Accept: application/json
+
+### next page: keep exactly the same search and page size
+GET {{Warehouse.Api_HostAddress}}/api/transfers?q=P1-TOMATO-SEED&pageSize=5&cursor={{TransferCursor}}
+Accept: application/json
+
+### transfer lines (search by Product SKU)
+GET {{Warehouse.Api_HostAddress}}/api/transfer-lines?q=P1-TOMATO-SEED&pageSize=5
+Accept: application/json
+
+### read-only receipt retrieval (received: 200/replay; approved: 409; wrong tenant: 404)
+GET {{Warehouse.Api_HostAddress}}/api/transfers/{{TransferTenantId}}/{{TransferPublicId}}/completion
+Accept: application/json
+
+### invalid low-stock threshold is a structured 400 before SQL (even for nonexistent IDs)
+GET {{Warehouse.Api_HostAddress}}/api/tenants/{{TenantPublicId}}/warehouses/{{WarehousePublicId}}/stock-availability?lowStockThreshold=1000000000000000
+Accept: application/problem+json
+
+### low-stock upper supported boundary
+GET {{Warehouse.Api_HostAddress}}/api/tenants/{{TenantPublicId}}/warehouses/{{WarehousePublicId}}/stock-availability?lowStockThreshold=999999999999999.9999
+Accept: application/json
+
+### invalid cursor is a structured 400 before SQL
+GET {{Warehouse.Api_HostAddress}}/api/transfers?cursor=invalid
+Accept: application/problem+json
+
+### all tenants 
 GET {{Warehouse.Api_HostAddress}}/api/tenants
 Accept: application/json
 
-###
-
-GET {{Warehouse.Api_HostAddress}}/api/tenants/460500a6-c80d-4228-9525-f25527e12a38
+### tenant by TenantPublicId
+GET {{Warehouse.Api_HostAddress}}/api/tenants/{{TenantPublicId}}
 Accept: application/json
 
-###
-
-GET {{Warehouse.Api_HostAddress}}/api/tenants/deabfaaa-c9a1-4e05-8db4-98bfc9029605
+### invalid TenantPublicId is a 404 Not Found
+GET {{Warehouse.Api_HostAddress}}/api/tenants/{{InvalidPublicId}}
 Accept: application/json
 
-###
-
-GET {{Warehouse.Api_HostAddress}}/api/tenants/460500a6-c80d-4228-9525-f25527e12a38/warehouses
+### all of a tenant's warehouses
+GET {{Warehouse.Api_HostAddress}}/api/tenants/{{TenantPublicId}}/warehouses
 Accept: application/json
 
-###
-
-GET {{Warehouse.Api_HostAddress}}/api/tenants/deabfaaa-c9a1-4e05-8db4-98bfc9029605/warehouses
+### all transfer lines
+GET {{Warehouse.Api_HostAddress}}/api/transfer-lines
 Accept: application/json
 
-###
-
-GET {{Warehouse.Api_HostAddress}}/api/tenants/00000000-0000-0000-0000-000000000001
-Accept: application/json
-
-### 
-
+### all transfers
 GET {{Warehouse.Api_HostAddress}}/api/transfers
 Accept: application/json
 
-###
+### all approved transfers
+GET {{Warehouse.Api_HostAddress}}/api/transfers?q=APPROVED
+Accept: application/json
 
-GET {{Warehouse.Api_HostAddress}}/api/transfer-lines
+### search transfers by partial TenantName
+GET {{Warehouse.Api_HostAddress}}/api/transfers?q=Greenleaf
+Accept: application/json
+
+### search transfers by InventoryLots.LotNumber
+GET {{Warehouse.Api_HostAddress}}/api/transfers?q=P1-TOMATO-A
+Accept: application/json
+
+### search transfers by partial InventoryLots.LotNumber
+GET {{Warehouse.Api_HostAddress}}/api/transfers?q=Basil
 Accept: application/json
