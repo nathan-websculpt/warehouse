@@ -7,6 +7,33 @@
 
 <h1>Transfer Lines</h1>
 
+<form method="get" class="mb-3">
+    <label asp-for="Q">Search transfers</label>
+    <input asp-for="Q" maxlength="100" placeholder="Tenant, status, GUID, SKU, product, or lot number" />
+    <label asp-for="PageSize">Results per page</label>
+    
+    <select asp-for="PageSize">
+        <option>5</option>
+        <option>10</option>
+        <option>25</option>
+        <option>50</option>
+        <option>100</option>
+    </select>
+    
+    <button type="submit">Search</button>
+</form>
+
+<nav aria-label="Transfer line pages" class="mb-3">
+    @if (Model.PreviousCursor is not null)
+    {
+        <a asp-route-q="@Model.Q" asp-route-pageSize="@Model.PageSize" asp-route-cursor="@Model.PreviousCursor">Previous</a>
+    }
+    @if (Model.NextCursor is not null)
+    {
+        <a asp-route-q="@Model.Q" asp-route-pageSize="@Model.PageSize" asp-route-cursor="@Model.NextCursor">Next</a>
+    }
+</nav>
+
 @if (Model.ErrorMessage is not null)
 {
     <div class="alert alert-danger" role="alert">
@@ -22,13 +49,15 @@
         Replay: @completion.Summary.IsReplay.
     </div>
 
-    <pre class="bg-light border rounded p-3">@System.Text.Json.JsonSerializer.Serialize(
-        completion,
-        new System.Text.Json.JsonSerializerOptions(
-            System.Text.Json.JsonSerializerDefaults.Web)
-        {
-            WriteIndented = true
-        })</pre>
+    <pre class="bg-light border rounded p-3">
+        @System.Text.Json.JsonSerializer.Serialize(
+            completion,
+            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web)
+            {
+                WriteIndented = true
+            }
+        )
+    </pre>
 }
 
 @if (Model.InventoryTransferLines.Count == 0)
@@ -66,12 +95,23 @@ else
                     <td>@transfer.SourceLocationId</td>
                     <td>@transfer.DestinationLocationId</td>
                     <td>
-                        @if (transfer.TransferStatusCode is "APPROVED" or "RECEIVED")
+                        @if (transfer.TransferStatusCode == "RECEIVED")
                         {
-                            var buttonText =
-                                transfer.TransferStatusCode == "RECEIVED" ? "Replay completion" : "Finalize transfer";
-
+                            <a asp-page-handler="Completion"
+                                asp-route-tenantId="@transfer.Tenant.TenantId"
+                                asp-route-inventoryTransferPublicId="@transfer.InventoryTransferPublicId"
+                                asp-route-q="@Model.Q"
+                                asp-route-pageSize="@Model.PageSize"
+                                asp-route-cursor="@Model.Cursor">
+                                Retrieve completion
+                            </a>
+                        }
+                        else if (transfer.TransferStatusCode == "APPROVED")
+                        {
                             <form method="post" asp-page-handler="Finalize">
+                                <input type="hidden" asp-for="Q" />
+                                <input type="hidden" asp-for="Cursor" />
+                                <input type="hidden" asp-for="PageSize" />
                                 <input type="hidden"
                                        name="tenantId"
                                        value="@transfer.Tenant.TenantId" />
@@ -86,7 +126,7 @@ else
 
                                 <button type="submit"
                                         class="btn btn-sm btn-primary">
-                                    @buttonText
+                                    Finalize transfer
                                 </button>
                             </form>
                         }
