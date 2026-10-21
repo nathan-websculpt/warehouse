@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Warehouse.Contracts\Warehouse.Contracts.csproj" />
+	<ProjectReference Include="..\Warehouse.Aspire.ServiceDefaults\Warehouse.Aspire.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>

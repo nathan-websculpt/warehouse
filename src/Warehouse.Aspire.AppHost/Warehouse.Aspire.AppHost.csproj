@@ -16,6 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Warehouse.Api\Warehouse.Api.csproj" />
     <ProjectReference Include="..\Warehouse.Web.Blazor\Warehouse.Web.Blazor.csproj" />
+	<ProjectReference Include="..\Warehouse.Web.RazorPages\Warehouse.Web.RazorPages.csproj" />
   </ItemGroup>
 
 </Project>

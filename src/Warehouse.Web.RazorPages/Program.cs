@@ -1,5 +1,7 @@
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddServiceDefaults();
+
 builder.Services.AddRazorPages();
 
 var warehouseApiBaseUrl =
@@ -28,5 +30,7 @@ app.UseAuthorization();
 
 app.MapStaticAssets();
 app.MapRazorPages().WithStaticAssets();
+
+app.MapDefaultEndpoints();
 
 app.Run();
