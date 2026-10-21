@@ -7,4 +7,6 @@
   <Project Path="src/Warehouse.Web.Blazor/Warehouse.Web.Blazor.csproj" />
   <Project Path="src/Warehouse.Web.RazorPages/Warehouse.Web.RazorPages.csproj" Id="7aafef71-c61d-427e-8e09-f03bc6bddf90" />
   <Project Path="tests/Warehouse.Api.IntegrationTests/Warehouse.Api.IntegrationTests.csproj" Id="98563b7e-1a89-4a09-a42a-ad0fbcbabe73" />
+  <Project Path="tests/Warehouse.Api.UnitTests/Warehouse.Api.UnitTests.csproj" />
+  <Project Path="tests/Warehouse.Web.Blazor.Client.Tests/Warehouse.Web.Blazor.Client.Tests.csproj" />
 </Solution>
